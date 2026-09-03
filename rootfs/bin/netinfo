@@ -1,0 +1,21 @@
+#!/bin/sh
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "Network Information"
+echo "==================="
+echo
+
+echo "Hostname : $(hostname)"
+echo
+
+ip addr | grep "inet "
+
+echo
+ip route
+
+echo
+echo "SC Co."

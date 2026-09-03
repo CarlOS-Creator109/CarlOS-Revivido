@@ -1,0 +1,121 @@
+#==========================================================
+#  .twmrc  —  configuracion de TWM para CarlOS "Ruby of Sistem"
+#  Estilo rubi sobre fondo oscuro, a juego con CarlOS-Term.
+#==========================================================
+
+#-- Comportamiento general -------------------------------------------------
+NoGrabServer
+RestartPreviousState
+DecorateTransients
+TitleFont      "-misc-fixed-bold-r-normal--13-120-75-75-c-70-iso8859-1"
+ResizeFont     "-misc-fixed-bold-r-normal--13-120-75-75-c-70-iso8859-1"
+MenuFont       "-misc-fixed-medium-r-normal--13-120-75-75-c-70-iso8859-1"
+IconFont       "-misc-fixed-medium-r-normal--13-120-75-75-c-70-iso8859-1"
+ResizeFont     "-misc-fixed-bold-r-normal--13-120-75-75-c-70-iso8859-1"
+
+#-- No requerir click para dar foco (foco sigue al mouse) ------------------
+#  Comenta la linea siguiente si prefieres foco por click.
+# NoTitleFocus
+
+#-- Colores: paleta CarlOS ------------------------------------------------
+#   Fondo oscuro carbon, acentos en rubi, texto hueso.
+Color
+{
+    BorderColor        "#c0392b"      # borde ventana: rubi
+    DefaultBackground  "#1a1a1a"      # carbon
+    DefaultForeground  "#d8d0cc"      # hueso
+    TitleBackground    "#c0392b"      # barra de titulo: rubi
+    TitleForeground    "#ffffff"      # texto titulo: blanco
+    MenuBackground     "#1a1a1a"
+    MenuForeground     "#d8d0cc"
+    MenuTitleBackground "#c0392b"
+    MenuTitleForeground "#ffffff"
+    MenuShadowColor    "#000000"
+    IconBackground     "#1a1a1a"
+    IconForeground     "#c0392b"
+    IconBorderColor    "#c0392b"
+    IconManagerBackground "#1a1a1a"
+    IconManagerForeground "#d8d0cc"
+    IconManagerHighlight  "#c0392b"
+}
+
+#-- Geometria de la barra de titulo ---------------------------------------
+BorderWidth        2
+TitlePadding       4
+FramePadding       2
+ButtonIndent       1
+
+#-- Cursor ----------------------------------------------------------------
+Cursors
+{
+    Frame     "top_left_arrow"
+    Title     "top_left_arrow"
+    Icon      "top_left_arrow"
+    Root      "top_left_arrow"
+    Menu      "sb_left_arrow"
+    Move      "fleur"
+    Resize    "fleur"
+    Wait      "watch"
+    Select    "dot"
+}
+
+#-- Que ventanas NO llevan barra de titulo --------------------------------
+#  (util para la barra de tareas y el fondo)
+NoTitle
+{
+    "carlos-bar"
+    "xclock"
+}
+
+#==========================================================
+#  Acciones de raton sobre el escritorio (root window)
+#==========================================================
+#   boton1 (izq)   -> menu de ventanas abiertas
+#   boton2 (medio) -> nada
+#   boton3 (der)   -> menu principal CarlOS
+Button1 = : root : f.menu "ventanas"
+Button3 = : root : f.menu "carlos"
+
+#-- Sobre la barra de titulo ----------------------------------------------
+Button1 = : title : f.move
+Button2 = : title : f.raiselower
+Button3 = : title : f.menu "ventana-ops"
+
+#==========================================================
+#  Menu principal — click derecho en el escritorio
+#==========================================================
+menu "carlos"
+{
+    "CarlOS"           f.title
+    "Nueva terminal"   f.exec "ruby $HOME/CarlOS/gui/carlos-term/carlos-term.rb &"
+    "xterm (respaldo)" f.exec "xterm &"
+    ""                 f.nop
+    "Refrescar fondo"  f.exec "$HOME/CarlOS/gui/desktop/fondo.sh &"
+    ""                 f.nop
+    "Ventanas"         f.menu "ventanas"
+    "Operaciones"      f.menu "ventana-ops"
+    ""                 f.nop
+    "Reiniciar TWM"    f.restart
+    "Salir de X"       f.quit
+}
+
+#-- Submenu de operaciones sobre una ventana ------------------------------
+menu "ventana-ops"
+{
+    "Operaciones"   f.title
+    "Subir"         f.raise
+    "Bajar"         f.lower
+    "Mover"         f.move
+    "Redimensionar" f.resize
+    "Minimizar"     f.iconify
+    ""              f.nop
+    "Cerrar"        f.delete
+    "Matar"         f.destroy
+}
+
+#-- Menu de ventanas abiertas (se llena solo) -----------------------------
+menu "ventanas"
+{
+    "Ventanas"  f.title
+    "(vacio)"   f.nop
+}

@@ -1,0 +1,25 @@
+#!/bin/sh
+#==========================================================
+#  .xinitrc  —  sesion grafica de CarlOS "Ruby of Sistem"
+#==========================================================
+#  Arranca:  fondo  ->  barra  ->  terminal  ->  TWM
+#  Copia este archivo a ~/.xinitrc y arranca con `startx`.
+#==========================================================
+
+CARLOS="$HOME/CarlOS/gui"
+
+# 1) Fondo de escritorio (elige UNA de las dos lineas)
+#    a) simple con xsetroot:
+"$CARLOS/desktop/fondo.sh" &
+#    b) logo Ruby dibujado (descomenta y comenta la de arriba):
+# ruby "$CARLOS/desktop/carlos-desktop.rb" &
+
+# 2) Barra de tareas (reloj + marca)
+ruby "$CARLOS/desktop/carlos-bar.rb" &
+
+# 3) Una terminal de arranque
+ruby "$CARLOS/carlos-term/carlos-term.rb" &
+
+# 4) Window manager al frente (mantiene la sesion viva).
+#    Cuando TWM termina, la sesion X se cierra.
+exec twm -f "$CARLOS/desktop/twmrc"

@@ -1,0 +1,99 @@
+#!/bin/sh
+#==========================================================
+#  gpu-probe — vuelca diagnostico grafico de CarlOS a un
+#  floppy (/dev/fd0), para sacarlo de la VM y analizarlo.
+#
+#  Uso en CarlOS:  gpu-probe
+#  Escribe todo a /dev/fd0 (imagen floppy montada en QEMU).
+#==========================================================
+
+OUT=/tmp/gpu-probe.txt
+
+{
+echo "================ CarlOS GPU-PROBE ================"
+echo "fecha: $(date 2>/dev/null)"
+echo
+
+echo "===== 1. KERNEL ====="
+uname -a
+echo
+
+echo "===== 2. /dev (grafico) ====="
+echo "--- /dev/dri ---"
+ls -la /dev/dri/ 2>&1
+echo "--- framebuffers /dev/fb* ---"
+ls -la /dev/fb* 2>&1
+echo "--- todo lo grafico en /dev ---"
+ls /dev/ | grep -iE 'fb|dri|card|vga|vesa|gpu' 2>&1
+echo
+
+echo "===== 3. /proc/fb ====="
+cat /proc/fb 2>&1
+echo
+
+echo "===== 4. mounts (devtmpfs?) ====="
+mount 2>&1 | grep -iE 'dev|sys|proc'
+echo
+
+echo "===== 5. dmesg: DRM / framebuffer / GPU ====="
+dmesg 2>&1 | grep -iE 'drm|framebuffer|fb0|vesa|efifb|simplefb|bochs|virtio|qxl|radeon|amdgpu|i915|nouveau|firmware|vgaarb' 
+echo
+
+echo "===== 6. PCI (que GPU ve el kernel) ====="
+if command -v lspci >/dev/null 2>&1; then
+    lspci 2>&1 | grep -iE 'vga|display|3d'
+else
+    echo "no hay lspci; leyendo /sys..."
+    for d in /sys/bus/pci/devices/*/class; do
+        cls=$(cat "$d" 2>/dev/null)
+        case "$cls" in
+            0x0300*|0x0380*) echo "GPU en $(dirname $d): class=$cls" ;;
+        esac
+    done
+fi
+echo
+
+echo "===== 7. modulos cargados ====="
+lsmod 2>/dev/null | head -20 || echo "(sin lsmod / kernel monolitico)"
+echo
+
+echo "===== 8. libs graficas en el sistema ====="
+echo "--- libdrm ---"; ls /usr/lib/libdrm* 2>&1
+echo "--- libgbm ---"; ls /usr/lib/libgbm* 2>&1
+echo "--- Mesa /usr/lib/dri ---"; ls /usr/lib/dri/ 2>&1
+echo "--- libGL ---"; ls /usr/lib/libGL* 2>&1
+echo
+
+echo "===== 9. Xorg binario ====="
+ls -la /usr/lib/Xorg 2>&1
+ls -la /lib64/ld-linux-x86-64.so.2 2>&1
+echo
+
+echo "================ FIN PROBE ================"
+} > "$OUT" 2>&1
+
+echo "Diagnostico generado en $OUT"
+echo
+
+# --- Escribir al floppy ---
+if [ -b /dev/fd0 ]; then
+    echo "Escribiendo a /dev/fd0 (floppy)..."
+    # opcion A: si el floppy tiene FS, montarlo y copiar
+    mkdir -p /tmp/fd 2>/dev/null
+    if mount -t vfat /dev/fd0 /tmp/fd 2>/dev/null || mount /dev/fd0 /tmp/fd 2>/dev/null; then
+        cp "$OUT" /tmp/fd/gpu-probe.txt
+        sync
+        umount /tmp/fd
+        echo "OK: escrito en el floppy (como archivo gpu-probe.txt)"
+    else
+        # opcion B: escribir crudo al device (dd)
+        echo "El floppy no tiene FS; escribiendo crudo con dd..."
+        dd if="$OUT" of=/dev/fd0 bs=512 2>/dev/null
+        sync
+        echo "OK: escrito crudo. Leelo en el host con:"
+        echo "   strings floppy.img | head -100   (o cat floppy.img)"
+    fi
+else
+    echo "No hay /dev/fd0. Muestra el archivo en pantalla:"
+    echo "   cat $OUT"
+fi

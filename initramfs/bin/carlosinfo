@@ -1,0 +1,35 @@
+#!/bin/sh
+
+clear
+
+[ -f /etc/logo2.txt ] && cat /etc/logo2.txt
+
+echo
+cat /etc/carlos-release
+echo
+
+echo "=============================="
+echo " System Information"
+echo "=============================="
+
+echo "Kernel   : $(uname -r)"
+echo "Machine  : $(uname -m)"
+echo "Hostname : $(hostname)"
+
+CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | sed 's/^ *//')
+echo "CPU      : $CPU"
+
+RAM=$(awk '/MemTotal/ {printf "%.0f MB",$2/1024}' /proc/meminfo)
+echo "Memory   : $RAM"
+
+echo "Shell    : BusyBox ash"
+
+UP=$(cut -d. -f1 /proc/uptime)
+echo "Uptime   : ${UP}s"
+
+echo "Init     : scinit"
+
+echo
+echo "SC Co."
+echo "Union of SCWEBS & SCSOFTWARE"
+echo

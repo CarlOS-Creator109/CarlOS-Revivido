@@ -1,0 +1,6 @@
+#!/bin/sh
+# sesion grafica de CarlOS
+ruby /opt/carlos/gui/desktop/carlos-desktop.rb &
+ruby /opt/carlos/gui/desktop/carlos-bar.rb &
+ruby /opt/carlos/gui/carlos-term/carlos-term.rb &
+exec twm -f /opt/carlos/gui/desktop/twmrc

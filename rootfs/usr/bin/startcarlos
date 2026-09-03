@@ -1,0 +1,23 @@
+#!/bin/sh
+# startcarlos — entorno grafico de CarlOS SIN xinit
+export HOME=/root
+export DISPLAY=:0
+export XAUTHORITY=/tmp/.Xauthority
+: > /tmp/.Xauthority 2>/dev/null
+
+/usr/bin/Xorg :0 -logfile /tmp/Xorg.0.log -nolisten tcp vt1 &
+XPID=$!
+
+i=0
+while [ ! -S /tmp/.X11-unix/X0 ]; do
+    i=$((i+1))
+    [ $i -gt 20 ] && { echo "X no arranco. Log:"; cat /tmp/Xorg.0.log; exit 1; }
+    sleep 0.5
+done
+
+ruby /opt/carlos/gui/desktop/carlos-desktop.rb &
+ruby /opt/carlos/gui/desktop/carlos-bar.rb &
+ruby /opt/carlos/gui/carlos-term/carlos-term.rb &
+
+twm -f /opt/carlos/gui/desktop/twmrc
+kill $XPID 2>/dev/null

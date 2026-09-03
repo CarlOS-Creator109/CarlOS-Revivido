@@ -1,0 +1,29 @@
+#!/bin/sh
+
+clear
+
+cat /etc/logo-ruby.txt
+
+echo
+cat /etc/carlos-release
+echo
+
+echo "=============================="
+echo " System Information"
+echo "=============================="
+
+echo "Kernel   : $(uname -r)"
+echo "Machine  : $(uname -m)"
+
+CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | sed 's/^ *//')
+echo "CPU      : $CPU"
+
+RAM=$(awk '/MemTotal/ {printf "%.0f MB",$2/1024}' /proc/meminfo)
+echo "Memory   : $RAM"
+
+echo "Shell    : BusyBox ash"
+
+echo
+echo "SC Co."
+echo "Union of SCWEBS & SCSOFTWARE"
+echo

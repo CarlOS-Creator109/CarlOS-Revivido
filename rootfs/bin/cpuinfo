@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# cpuinfo v0.1
+# SC Co.
+#
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "CPU Information"
+echo "==============="
+echo
+
+grep -m1 "model name" /proc/cpuinfo | sed 's/model name[[:space:]]*:[[:space:]]*/Model     : /'
+grep -m1 "vendor_id" /proc/cpuinfo | sed 's/vendor_id[[:space:]]*:[[:space:]]*/Vendor    : /'
+grep -m1 "cpu MHz" /proc/cpuinfo | sed 's/cpu MHz[[:space:]]*:[[:space:]]*/Clock     : /'
+
+echo "Cores     : $(grep -c '^processor' /proc/cpuinfo)"
+echo "Arch      : $(uname -m)"
+
+echo
+echo "SC Co."

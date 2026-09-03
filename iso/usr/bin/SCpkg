@@ -1,0 +1,61 @@
+#!/bin/sh
+
+VERSION="0.1"
+
+CONF="/etc/scpkg/scpkg.conf"
+
+echo "SCpkg $VERSION"
+
+[ -f "$CONF" ] || {
+    echo "No existe $CONF"
+    exit 1
+}
+
+. "$CONF"
+
+case "$1" in
+
+install)
+    echo
+    echo "Instalando: $2"
+    echo
+    echo "Repositorio:"
+    echo "$Repository"
+    ;;
+
+remove)
+    echo
+    echo "Eliminar:"
+    echo "$2"
+    ;;
+
+search)
+    echo
+    echo "Buscar:"
+    echo "$2"
+    ;;
+
+update)
+    echo
+    echo "Actualizando repositorios..."
+    ;;
+
+list)
+    echo
+    echo "Paquetes instalados:"
+    ls "$DatabaseDir"
+    ;;
+
+*)
+    echo
+    echo "SCpkg $VERSION"
+    echo
+    echo "Uso:"
+    echo
+    echo " SCpkg install paquete"
+    echo " SCpkg remove paquete"
+    echo " SCpkg search paquete"
+    echo " SCpkg update"
+    echo " SCpkg list"
+    ;;
+esac

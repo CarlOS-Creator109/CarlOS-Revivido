@@ -1,0 +1,137 @@
+#!/bin/sh
+
+#==========================================
+# CarlOS System Initializer (SCINIT)
+#==========================================
+
+type() {
+    text="$1"
+
+    while [ -n "$text" ]; do
+        c="${text%"${text#?}"}"
+        printf "%s" "$c"
+        text="${text#?}"
+        sleep 0.02
+    done
+
+    printf "\n"
+}
+
+pause() {
+    sleep 0.5
+}
+
+panic() {
+    echo
+    echo "======================================"
+    echo "           SCINIT PANIC"
+    echo "======================================"
+    echo
+    echo "$1"
+    echo
+    export PS1="CarlOS(recovery):\\w # "
+    exec sh
+}
+
+clear
+
+echo "======================================"
+echo "     CarlOS System Initializer"
+echo "======================================"
+echo
+
+mkdir -p /mnt/bootmedia
+
+BOOTDEV=""
+BOOTCFG=""
+
+##########################################
+type "[1/6] Detectando medio de arranque..."
+pause
+
+for d in /dev/*; do
+
+    [ -b "$d" ] || continue
+
+    case "$d" in
+        /dev/loop*|/dev/ram*)
+            continue
+            ;;
+    esac
+
+    echo "Probando $d..."
+
+    if mount -o ro "$d" /mnt/bootmedia 2>/dev/null; then
+
+        if [ -f /mnt/bootmedia/file-bootCOS.bt ]; then
+
+            SIG=$(grep '^BootSignature=' \
+                /mnt/bootmedia/file-bootCOS.bt \
+                | cut -d= -f2)
+
+            if [ "$SIG" = "CARL-OS-SYSTEMFILE" ]; then
+
+                BOOTDEV="$d"
+                BOOTCFG=/mnt/bootmedia/file-bootCOS.bt
+
+                echo
+                echo "Encontrado medio de CarlOS en $BOOTDEV"
+
+                break
+
+            fi
+
+        fi
+
+        umount /mnt/bootmedia
+
+    fi
+
+done
+
+[ -z "$BOOTDEV" ] && panic "No se encontró un medio válido de CarlOS."
+
+##########################################
+type "[2/6] Leyendo configuración..."
+pause
+
+KERNEL=$(grep '^Kernel=' "$BOOTCFG" | cut -d= -f2)
+INITRD=$(grep '^Initramfs=' "$BOOTCFG" | cut -d= -f2)
+
+##########################################
+type "[3/6] Verificando Base System..."
+pause
+
+[ -x /mnt/bootmedia/sbin/init ] \
+    || panic "No existe /sbin/init."
+
+##########################################
+type "[4/6] Preparando pseudo-filesystems..."
+pause
+
+mkdir -p /mnt/bootmedia/proc
+mkdir -p /mnt/bootmedia/sys
+mkdir -p /mnt/bootmedia/dev
+
+mount --move /proc /mnt/bootmedia/proc \
+    || panic "No pude mover /proc"
+
+mount --move /sys /mnt/bootmedia/sys \
+    || panic "No pude mover /sys"
+
+mount --move /dev /mnt/bootmedia/dev \
+    || panic "No pude mover /dev"
+
+##########################################
+type "[5/6] Sincronizando..."
+pause
+
+sync
+
+##########################################
+type "[6/6] Iniciando Base System..."
+pause
+
+exec switch_root /mnt/bootmedia /sbin/init
+
+panic "switch_root devolvió un error."

@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# hardware v0.1
+# SC Co.
+#
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "Hardware Summary"
+echo "================"
+echo
+
+CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | sed 's/^ *//')
+CORES=$(grep -c "^processor" /proc/cpuinfo)
+
+MEM=$(awk '/MemTotal/ {printf "%.0f MB",$2/1024}' /proc/meminfo)
+
+ARCH=$(uname -m)
+
+HOST=$(hostname)
+
+echo "Hostname : $HOST"
+echo "CPU      : $CPU"
+echo "Cores    : $CORES"
+echo "Memory   : $MEM"
+echo "Arch     : $ARCH"
+
+echo
+echo "Storage"
+echo "-------"
+
+df -h
+
+echo
+echo "SC Co."

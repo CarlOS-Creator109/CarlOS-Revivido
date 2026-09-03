@@ -1,0 +1,18 @@
+#!/bin/sh
+mount -t devtmpfs devtmpfs /dev 2>/dev/null
+# /sbin/init de CarlOS 0.2 — con tmpfs para X (ISO read-only)
+
+mount -t tmpfs tmpfs /tmp   2>/dev/null
+mount -t tmpfs tmpfs /root  2>/dev/null
+mount -t tmpfs tmpfs /run   2>/dev/null
+mkdir -p /tmp/.X11-unix 2>/dev/null
+chmod 1777 /tmp /tmp/.X11-unix 2>/dev/null
+
+clear
+cat /etc/logo-ruby.txt
+echo
+echo "CarlOS Base System"
+echo
+echo "Escribe 'startcarlos' para iniciar el entorno grafico."
+echo
+exec /bin/sh

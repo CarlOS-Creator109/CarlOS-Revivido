@@ -1,0 +1,6 @@
+root:x:0:
+users:x:100:
+wheel:x:10:carlos
+audio:x:18:
+video:x:27:
+input:x:999:

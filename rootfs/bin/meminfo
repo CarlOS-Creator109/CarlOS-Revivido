@@ -1,0 +1,20 @@
+#!/bin/sh
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "Memory Information"
+echo "=================="
+echo
+
+awk '
+/MemTotal/     {printf "Total      : %.0f MB\n",$2/1024}
+/MemFree/      {printf "Free       : %.0f MB\n",$2/1024}
+/MemAvailable/ {printf "Available  : %.0f MB\n",$2/1024}
+' /proc/meminfo
+
+echo
+echo "SC Co."
+

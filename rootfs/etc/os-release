@@ -1,0 +1,5 @@
+NAME="CarlOS"
+VERSION="0.2 Alpha"
+ID=carlos
+PRETTY_NAME="CarlOS 0.2 Alpha (Ruby of Sistem)"
+HOME_URL="https://carlos-oss.web.app"

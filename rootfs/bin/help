@@ -1,0 +1,57 @@
+#!/bin/sh
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "CarlOS 0.1 Alpha"
+echo
+echo "========================="
+echo " Available Commands"
+echo "========================="
+echo
+
+echo "System"
+echo "------"
+echo " help          Show this help"
+echo " version       Show system version"
+echo " about         About CarlOS"
+echo " license       License information"
+echo " welcome       Welcome message"
+echo
+
+echo "Information"
+echo "-----------"
+echo " carlosinfo   Detailed system information"
+echo " scfetch      System summary"
+echo " hardware     Hardware summary"
+echo " cpuinfo      CPU information"
+echo " meminfo      Memory information"
+echo " diskinfo     Disk information"
+echo " netinfo      Network information"
+echo
+
+echo "Audio"
+echo "-----"
+echo " morsbep      Morse code using PC Speaker"
+echo " tone         Play a tone"
+echo " beepplay     Play beep sequences"
+echo
+
+echo "Conversion"
+echo "----------"
+echo " ascii2morse Convert ASCII to Morse"
+echo " morse2ascii Convert Morse to ASCII"
+echo
+
+echo "Text"
+echo "----"
+echo " typewrite    Typewriter effect"
+echo " banner       ASCII banner"
+
+echo
+echo "BusyBox commands are also available."
+echo
+echo "SC Co."
+echo "Union of SCWEBS & SCSOFTWARE"

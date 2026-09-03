@@ -1,0 +1,18 @@
+#!/bin/sh
+
+clear
+
+cat /etc/logo2.txt
+
+echo
+echo "Disk Information"
+echo "================"
+echo
+
+df -h
+
+echo
+lsblk
+
+echo
+echo "SC Co."

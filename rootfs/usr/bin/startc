@@ -1,0 +1,3 @@
+#!/bin/sh
+# startc — inicia el escritorio de CarlOS
+ruby /opt/carlos/gui/carlos-wm-tui.rb

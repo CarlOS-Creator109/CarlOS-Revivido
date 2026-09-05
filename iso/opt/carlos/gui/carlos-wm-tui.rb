@@ -12,6 +12,9 @@
 #    q              salir del escritorio
 #==========================================================
 
+require 'pty'
+require 'io/console'
+
 module CarlOS
   ESC = "\e"
   @@buf = nil                      # buffer de frame (double buffering)
@@ -72,6 +75,97 @@ module CarlOS
         CarlOS.at(@top+1+i, @left+2)
         clean = ln.gsub(/#{ESC}\[[0-9;]*m/, '')[0, @w-4]
         CarlOS.emit "#{ESC}[48;5;234m#{WHITE}#{clean.ljust(@w-4)}#{RST}"
+      end
+    end
+  end
+
+  # -------- Ventana-terminal: shell ash REAL adentro --------
+  class TermWindow < Window
+    attr_reader :alive
+    def initialize(id, top, left, w, h)
+      super(id, "Terminal", top, left, w, h, [])
+      @rows_txt = h - 2
+      @cols_txt = w - 4
+      @scroll = []
+      @curline = +""
+      @alive = true
+      @in_esc = false
+      start_shell
+    end
+
+    def start_shell
+      @pout, @pin, @pid = PTY.spawn(ENV["SHELL"] || "/bin/sh")
+      begin; @pout.winsize = [@rows_txt, @cols_txt]; rescue StandardError; end
+      @scroll << "CarlOS ash"
+    end
+
+    def pump
+      return unless @alive
+      loop do
+        data = @pout.read_nonblock(2048)
+        break if data.nil? || data.empty?
+        feed(data)
+      end
+    rescue IO::WaitReadable, Errno::EAGAIN
+    rescue EOFError, Errno::EIO
+      @alive = false
+    end
+
+    def feed(bytes)
+      bytes.each_char do |c|
+        case c
+        when "\n" then @scroll << @curline; @curline = +""
+        when "\r" then nil
+        when "\b", "\x7f" then @curline = @curline[0...-1] || +""
+        when "\e" then @in_esc = true
+        else
+          if @in_esc
+            @in_esc = false if c =~ /[a-zA-Z]/
+          elsif c.ord >= 32
+            @curline << c
+          end
+        end
+      end
+      @scroll = @scroll[-200..] if @scroll.length > 200
+    end
+
+    def send_key(bytes)
+      return unless @alive
+      @pin.write(bytes) rescue (@alive = false)
+    end
+
+    def close!
+      Process.kill("TERM", @pid) rescue nil
+      @pout.close rescue nil
+      @pin.close rescue nil
+      @alive = false
+    end
+
+    def draw(active)
+      bcol = active ? RED : DARK
+      tcol = active ? WHITE : GREY
+      (1...@h).each do |i|
+        CarlOS.at(@top+i+1, @left+@w); CarlOS.emit "#{ESC}[48;5;233m  #{RST}"
+      end
+      CarlOS.at(@top+@h, @left+2); CarlOS.emit "#{ESC}[48;5;233m#{" "*@w}#{RST}"
+      CarlOS.at(@top, @left); CarlOS.emit "#{bcol}\u250c#{"\u2500"*(@w-2)}\u2510#{RST}"
+      (1...@h-1).each do |i|
+        CarlOS.at(@top+i, @left)
+        CarlOS.emit "#{bcol}\u2502#{RST}#{ESC}[48;5;16m#{" "*(@w-2)}#{RST}#{bcol}\u2502#{RST}"
+      end
+      CarlOS.at(@top+@h-1, @left); CarlOS.emit "#{bcol}\u2514#{"\u2500"*(@w-2)}\u2518#{RST}"
+      CarlOS.at(@top, @left+2)
+      tbg = active ? BGRUBY : ""
+      CarlOS.emit "#{tbg}#{DARK}[#{tcol} Terminal ash #{DARK}]#{RST}"
+      CarlOS.at(@top, @left+@w-4); CarlOS.emit "#{bcol}[#{tcol}x#{bcol}]#{RST}" if active
+      visibles = (@scroll + [@curline]).last(@rows_txt)
+      visibles.each_with_index do |ln, i|
+        CarlOS.at(@top+1+i, @left+2)
+        txt = ln.gsub(/#{ESC}\[[0-9;]*m/, '')[0, @cols_txt].to_s
+        if active && i == visibles.length-1
+          txt = (txt + "_")[0, @cols_txt]
+        end
+        CarlOS.emit "#{ESC}[48;5;16m#{ESC}[38;5;83m#{txt.ljust(@cols_txt)}#{RST}"
       end
     end
   end
@@ -183,6 +277,19 @@ module CarlOS
     end
 
     def open_app(name)
+      if name == "Terminal"
+        # ventana-terminal con shell ash real adentro
+        w = [@cols - 8, 56].min
+        h = [@rows - 6, 16].min
+        n = @wins.length
+        top = 3 + (n*2) % [@rows-h-3, 1].max
+        left = 4 + (n*4) % [@cols-w-4, 1].max
+        tw = TermWindow.new(@next_id, top, left, w, h)
+        @next_id += 1
+        @wins << tw
+        @active = tw
+        return
+      end
       lines = app_lines(name)
       w = [ [lines.map{|l| l.gsub(/#{ESC}\[[0-9;]*m/,'').length}.max || 20, @title_min||24].max + 6, @cols-6 ].min
       h = [lines.length + 3, @rows-6].min
@@ -198,6 +305,7 @@ module CarlOS
 
     def close_active
       return unless @active
+      @active.close! if @active.respond_to?(:close!)
       @wins.delete(@active)
       @active = @wins.last
     end
@@ -279,6 +387,8 @@ module CarlOS
       print "#{ESC}[?1000h#{ESC}[?1006h"
       $stdin.sync = true
       loop do
+        # bombear salida de las terminales abiertas
+        @wins.each { |w| w.pump if w.respond_to?(:pump) }
         render
         # esperar tecla O evento de mouse (poll corto)
         ready = IO.select([$stdin], nil, nil, 0.05)
@@ -287,6 +397,20 @@ module CarlOS
           handle_click
         end
         next unless ready
+
+        # si la ventana activa es una terminal, las teclas van al shell
+        if @active.respond_to?(:send_key) && @active.alive
+          raw = $stdin.read_nonblock(64) rescue nil
+          if raw
+            if raw == "\x1d"          # Ctrl-] : soltar foco al WM
+              cycle_active
+            else
+              @active.send_key(raw)
+            end
+          end
+          next
+        end
+
         k = read_key
         case k
         when "q","Q" then break

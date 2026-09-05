@@ -1,0 +1,48 @@
+#!/bin/sh
+#==========================================================
+#  alsa-probe — diagnostica por que ALSA no suena en CarlOS
+#==========================================================
+echo "================ CarlOS ALSA-PROBE ================"
+echo
+
+echo "===== 1. ¿El kernel ve la tarjeta? ====="
+echo "--- /proc/asound/cards ---"
+cat /proc/asound/cards 2>&1
+echo "--- /proc/asound/devices ---"
+cat /proc/asound/devices 2>&1
+echo
+
+echo "===== 2. ¿Existen los device nodes? ====="
+ls -la /dev/snd/ 2>&1
+echo
+
+echo "===== 3. ¿El modulo de sonido cargo? ====="
+dmesg 2>&1 | grep -iE 'snd|hda|azalia|sound|alsa' | head -15
+echo
+
+echo "===== 4. ¿aplay ve algo? ====="
+echo "--- aplay -l (tarjetas de reproduccion) ---"
+aplay -l 2>&1
+echo "--- aplay -L (PCMs disponibles) ---"
+aplay -L 2>&1 | head -20
+echo
+
+echo "===== 5. ¿libasound y config presentes? ====="
+ls -la /usr/lib/libasound.so* 2>&1
+ls -d /usr/share/alsa 2>&1
+ls /usr/share/alsa/ 2>&1 | head
+echo "--- alsa.conf existe? ---"
+ls -la /usr/share/alsa/alsa.conf 2>&1
+echo
+
+echo "===== 6. Prueba directa de tono ====="
+echo "Intentando aplay directo a hw:0,0..."
+# generar 1s de tono y mandarlo directo al hardware
+if command -v speaker-test >/dev/null 2>&1; then
+    timeout 2 speaker-test -t sine -f 440 -l 1 2>&1 | head -5
+else
+    echo "(sin speaker-test)"
+fi
+echo
+
+echo "================ FIN PROBE ================"

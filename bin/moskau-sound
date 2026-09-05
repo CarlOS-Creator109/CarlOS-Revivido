@@ -1,0 +1,55 @@
+#!/bin/sh
+#==========================================================
+#  moskau-sound — Korobeiniki (CarlOS)
+#  Por defecto: SOLO BUZZER (hasta 0.4 Plata).
+#  ALSA con --alsa, ambos con --both.
+#==========================================================
+SND=/opt/carlos/sound
+BUZZER_TONES="$SND/N1.tones"
+ALSA_WAV="$SND/korobeiniki_mix.wav"
+PIDFILE=/tmp/moskau-sound.pids
+
+if [ "$1" = "--stop" ]; then
+    [ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+    rm -f "$PIDFILE"
+    buzzeroff 2>/dev/null    # callar el buzzer YA (KIOCSOUND 0)
+    exit 0
+fi
+
+alsa_play() {
+    for dev in plughw:0,0 hw:0,0 default; do
+        aplay -D "$dev" -q "$ALSA_WAV" 2>/dev/null && return 0
+    done
+    return 1
+}
+
+MODE="buzzer"
+[ "$1" = "--alsa" ] && MODE="alsa"
+[ "$1" = "--both" ] && MODE="both"
+LOOP=1
+{ [ "$1" = "--once" ] || [ "$2" = "--once" ]; } && LOOP=0
+
+play_buzzer() {
+    # NO checar nada: intentar tocar. Si tuneplay no puede abrir la
+    # consola, falla solo, sin romper. En loop, reintenta.
+    if [ "$LOOP" = "1" ]; then
+        while :; do tuneplay "$BUZZER_TONES" || sleep 1; done
+    else
+        tuneplay "$BUZZER_TONES"
+    fi
+}
+play_alsa() {
+    if [ "$LOOP" = "1" ]; then while :; do alsa_play || sleep 1; done
+    else alsa_play; fi
+}
+
+> "$PIDFILE"
+case "$MODE" in
+    buzzer) play_buzzer & echo $! >> "$PIDFILE" ;;
+    alsa)   play_alsa   & echo $! >> "$PIDFILE" ;;
+    both)   play_alsa & echo $! >> "$PIDFILE"
+            play_buzzer & echo $! >> "$PIDFILE" ;;
+esac
+
+echo "moskau-sound: $MODE (pid $(cat $PIDFILE | tr '\n' ' '))"
+[ "$LOOP" = "0" ] && wait
